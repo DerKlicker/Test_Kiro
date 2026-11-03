@@ -26,6 +26,8 @@ def index():
         "database_id": os.environ.get("NOTION_DATABASE_ID", ""),
         "bring_email": os.environ.get("BRING_EMAIL", ""),
         "bring_list": os.environ.get("BRING_LIST", ""),
+        "ca_cert_path": os.environ.get("CA_CERT_PATH", ""),
+        "disable_ssl": os.environ.get("DISABLE_SSL_VERIFY", "").lower() in ("1", "true", "yes"),
     }
     return render_template("index.html", prefill=prefill, result=None, error=None)
 
@@ -37,12 +39,17 @@ def transfer():
     bring_email = request.form.get("bring_email", "").strip()
     bring_password = request.form.get("bring_password", "")
     bring_list = request.form.get("bring_list", "").strip() or None
+    ca_cert_path = request.form.get("ca_cert_path", "").strip() or None
+    disable_ssl = request.form.get("disable_ssl") == "on"
+    verify_ssl = not disable_ssl
 
     prefill = {
         "notion_token": notion_token,
         "database_id": database_id,
         "bring_email": bring_email,
         "bring_list": bring_list or "",
+        "ca_cert_path": ca_cert_path or "",
+        "disable_ssl": disable_ssl,
     }
 
     # Pflichtfelder prüfen.
@@ -61,7 +68,12 @@ def transfer():
         return render_template("index.html", prefill=prefill, result=None, error=error)
 
     try:
-        notion = NotionHelper(notion_token, database_id)
+        notion = NotionHelper(
+            notion_token,
+            database_id,
+            ca_cert_path=ca_cert_path,
+            verify_ssl=verify_ssl,
+        )
         items = notion.fetch_checked_items()
 
         if not items:
@@ -82,6 +94,8 @@ def transfer():
             password=bring_password,
             items=payload,
             list_name=bring_list,
+            ca_cert_path=ca_cert_path,
+            verify_ssl=verify_ssl,
         )
 
         # Checkboxen nur für tatsächlich verarbeitete Artikel zurücksetzen

@@ -11,7 +11,10 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+import httpx
 from notion_client import Client
+
+from ssl_helper import build_ssl_context
 
 
 # Property-Namen in der Notion-Datenbank "Gesamt Event Ablaufplan".
@@ -39,8 +42,18 @@ class ShoppingItem:
 
 
 class NotionHelper:
-    def __init__(self, token: str, database_id: str):
-        self.client = Client(auth=token)
+    def __init__(
+        self,
+        token: str,
+        database_id: str,
+        ca_cert_path: str | None = None,
+        verify_ssl: bool = True,
+    ):
+        # SSL-Konfiguration (wichtig in Firmennetzen mit HTTPS-Proxy).
+        ssl_context = build_ssl_context(ca_cert_path=ca_cert_path, verify=verify_ssl)
+        http_client = httpx.Client(verify=ssl_context)
+
+        self.client = Client(auth=token, client=http_client)
         self.database_id = database_id
 
     # ------------------------------------------------------------------

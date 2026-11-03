@@ -13,6 +13,8 @@ from dataclasses import dataclass
 import aiohttp
 from bring_api import Bring
 
+from ssl_helper import build_ssl_context
+
 
 @dataclass
 class BringResult:
@@ -21,15 +23,24 @@ class BringResult:
     list_name: str
 
 
+def _make_session(ca_cert_path: str | None, verify_ssl: bool) -> aiohttp.ClientSession:
+    """Erzeugt eine aiohttp-Session mit passendem SSL-Context."""
+    ssl_context = build_ssl_context(ca_cert_path=ca_cert_path, verify=verify_ssl)
+    connector = aiohttp.TCPConnector(ssl=ssl_context)
+    return aiohttp.ClientSession(connector=connector)
+
+
 async def _send_items_async(
     email: str,
     password: str,
     items: list[tuple[str, str]],
     list_name: str | None = None,
+    ca_cert_path: str | None = None,
+    verify_ssl: bool = True,
 ) -> BringResult:
     """items ist eine Liste aus (name, specification)-Tupeln."""
 
-    async with aiohttp.ClientSession() as session:
+    async with _make_session(ca_cert_path, verify_ssl) as session:
         bring = Bring(session, email, password)
         await bring.login()
 
@@ -80,19 +91,35 @@ def send_items(
     password: str,
     items: list[tuple[str, str]],
     list_name: str | None = None,
+    ca_cert_path: str | None = None,
+    verify_ssl: bool = True,
 ) -> BringResult:
     """Synchroner Wrapper um die async Bring!-Übertragung."""
-    return asyncio.run(_send_items_async(email, password, items, list_name))
+    return asyncio.run(
+        _send_items_async(
+            email, password, items, list_name, ca_cert_path, verify_ssl
+        )
+    )
 
 
-async def _list_names_async(email: str, password: str) -> list[str]:
-    async with aiohttp.ClientSession() as session:
+async def _list_names_async(
+    email: str,
+    password: str,
+    ca_cert_path: str | None = None,
+    verify_ssl: bool = True,
+) -> list[str]:
+    async with _make_session(ca_cert_path, verify_ssl) as session:
         bring = Bring(session, email, password)
         await bring.login()
         lists = (await bring.load_lists())["lists"]
         return [lst.get("name", "") for lst in lists]
 
 
-def list_names(email: str, password: str) -> list[str]:
+def list_names(
+    email: str,
+    password: str,
+    ca_cert_path: str | None = None,
+    verify_ssl: bool = True,
+) -> list[str]:
     """Gibt die Namen aller Einkaufslisten des Bring!-Kontos zurück."""
-    return asyncio.run(_list_names_async(email, password))
+    return asyncio.run(_list_names_async(email, password, ca_cert_path, verify_ssl))

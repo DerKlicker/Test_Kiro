@@ -40,6 +40,10 @@
     .b-skip { background: #fef3c7; color: #92400e; }
     .muted { color: #7b8794; font-size: 0.9rem; }
     hr { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
+    details.ssl { border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; background: #fafbfc; }
+    details.ssl summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; }
+    .checkbox-row { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem; }
+    .checkbox-row input { width: auto; margin: 0; }
   </style>
 </head>
 <body>
@@ -100,6 +104,25 @@
         <span class="hint">(optional – leer = erste/Standardliste)</span>
       </label>
       <input type="text" id="bring_list" name="bring_list" value="{{ prefill.bring_list }}" placeholder="z.B. Einkauf" />
+
+      <details class="ssl" {% if prefill.ca_cert_path or prefill.disable_ssl %}open{% endif %}>
+        <summary>🔒 Netzwerk / SSL-Einstellungen (Firmennetzwerk)</summary>
+        <p class="hint" style="margin:0.5rem 0 1rem;">
+          Nur nötig, wenn du den Fehler
+          <code>CERTIFICATE_VERIFY_FAILED</code> erhältst (typisch im Firmennetz
+          mit HTTPS-Proxy).
+        </p>
+
+        <label for="ca_cert_path">Pfad zum Firmen-Zertifikat
+          <span class="hint">(empfohlen – .pem/.crt-Datei)</span>
+        </label>
+        <input type="text" id="ca_cert_path" name="ca_cert_path" value="{{ prefill.ca_cert_path }}" placeholder="z.B. C:\Zertifikate\firma-root.pem" />
+
+        <label class="checkbox-row">
+          <input type="checkbox" name="disable_ssl" {% if prefill.disable_ssl %}checked{% endif %} />
+          SSL-Prüfung deaktivieren <span class="hint">(unsicher – nur im vertrauenswürdigen Firmennetz)</span>
+        </label>
+      </details>
 
       <button type="submit">An Bring! übertragen</button>
     </form>

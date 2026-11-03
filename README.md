@@ -75,6 +75,43 @@ Damit du die Felder nicht jedes Mal eintippen musst, kannst du `.env.example`
 nach `.env` kopieren und Werte eintragen (Passwort wird aus Sicherheitsgründen
 **nicht** vorbelegt). Die `.env` wird nicht ins Git eingecheckt.
 
+## Firmennetzwerk / SSL-Zertifikatsfehler
+
+Im Firmennetz (oder bei Antivirus mit HTTPS-Scan) kann folgender Fehler auftreten:
+
+```
+[SSL: CERTIFICATE_VERIFY_FAILED] self-signed certificate in certificate chain
+```
+
+Ursache: Eine Firewall/ein Proxy bricht den HTTPS-Verkehr auf und präsentiert
+ein eigenes Zertifikat, das Python nicht kennt. Es gibt zwei Lösungen (beide
+sind in der Weboberfläche unter **„🔒 Netzwerk / SSL-Einstellungen“** verfügbar):
+
+### Lösung A (empfohlen, sicher): Firmen-Zertifikat angeben
+
+1. Das Root-Zertifikat deiner Firma als `.pem`- oder `.crt`-Datei besorgen
+   (frag ggf. deine IT, oder exportiere es über den Browser aus der
+   Zertifikatskette beim Aufruf von `https://api.getbring.com`).
+2. Den vollständigen Pfad zur Datei im Feld **„Pfad zum Firmen-Zertifikat“**
+   eintragen, z.B. `C:\Zertifikate\firma-root.pem`.
+
+### Lösung B (schnell, unsicher): SSL-Prüfung deaktivieren
+
+Die Checkbox **„SSL-Prüfung deaktivieren“** anhaken. Damit akzeptiert das Tool
+jedes Zertifikat.
+
+> ⚠️ **Sicherheitshinweis:** Bei deaktivierter Prüfung wird die Echtheit der
+> Verbindung nicht mehr überprüft. Nutze das nur in einem vertrauenswürdigen
+> Firmennetz und niemals in einem öffentlichen/fremden Netzwerk.
+
+### Zusätzlich hilfreich (Windows)
+
+Stelle sicher, dass die Zertifikatsbasis aktuell ist:
+
+```bash
+pip install --upgrade certifi
+```
+
 ## Wichtige Hinweise
 
 - Die **Bring!-API ist inoffiziell** (`bring-api`). Sie wird von der App selbst
@@ -91,6 +128,7 @@ nach `.env` kopieren und Werte eintragen (Passwort wird aus Sicherheitsgründen
 ├── app.py              # Flask-Weboberfläche (Eingabemaske + Button)
 ├── notion_helper.py    # Notion lesen / Checkbox zurücksetzen
 ├── bring_helper.py     # Übertragung nach Bring! (Duplikat-Prüfung)
+├── ssl_helper.py       # SSL-Konfiguration (Firmennetz / Zertifikate)
 ├── templates/
 │   └── index.html      # Oberfläche
 ├── requirements.txt
