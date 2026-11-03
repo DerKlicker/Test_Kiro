@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Notion → Bring! Übertragung</title>
+  <style>
+    :root { --accent: #2f7d4f; --bg: #f5f6f8; --card: #ffffff; --border: #dfe3e8; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg); color: #1f2933; margin: 0; padding: 2rem 1rem;
+    }
+    .wrap { max-width: 640px; margin: 0 auto; }
+    h1 { font-size: 1.5rem; margin: 0 0 0.25rem; }
+    p.sub { margin: 0 0 1.5rem; color: #52606d; }
+    .card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 1.25rem;
+    }
+    label { display: block; font-weight: 600; margin-bottom: 0.35rem; font-size: 0.9rem; }
+    input {
+      width: 100%; padding: 0.6rem 0.7rem; border: 1px solid var(--border);
+      border-radius: 8px; font-size: 0.95rem; margin-bottom: 1rem;
+    }
+    input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(47,125,79,0.15); }
+    .hint { font-weight: 400; color: #7b8794; font-size: 0.8rem; }
+    button {
+      background: var(--accent); color: #fff; border: none; border-radius: 8px;
+      padding: 0.75rem 1.25rem; font-size: 1rem; font-weight: 600; cursor: pointer; width: 100%;
+    }
+    button:hover { background: #276a43; }
+    .error { background: #fde8e8; border: 1px solid #f5a6a6; color: #9b1c1c;
+             padding: 0.9rem 1rem; border-radius: 8px; margin-bottom: 1.25rem; }
+    .result h2 { font-size: 1.1rem; margin: 0 0 0.75rem; }
+    .result ul { margin: 0.25rem 0 1rem; padding-left: 1.25rem; }
+    .badge { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 999px;
+             font-size: 0.75rem; font-weight: 600; margin-left: 0.4rem; }
+    .b-add { background: #def7ec; color: #03543f; }
+    .b-skip { background: #fef3c7; color: #92400e; }
+    .muted { color: #7b8794; font-size: 0.9rem; }
+    hr { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
+    details.ssl { border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; background: #fafbfc; }
+    details.ssl summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; }
+    .checkbox-row { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem; }
+    .checkbox-row input { width: auto; margin: 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>🛒 Notion → Bring!</h1>
+    <p class="sub">Überträgt alle Zutaten mit gesetzter Checkbox <em>„An bring senden“</em> auf deine Bring!-Liste.</p>
+
+    {% if error %}
+      <div class="error">⚠️ {{ error }}</div>
+    {% endif %}
+
+    {% if result %}
+      <div class="card result">
+        {% if result.message %}
+          <h2>Hinweis</h2>
+          <p class="muted">{{ result.message }}</p>
+        {% else %}
+          <h2>✅ Übertragung abgeschlossen</h2>
+          <p class="muted">Bring!-Liste: <strong>{{ result.list_name }}</strong></p>
+
+          <p><strong>Hinzugefügt</strong> <span class="badge b-add">{{ result.added|length }}</span></p>
+          {% if result.added %}
+            <ul>{% for name in result.added %}<li>{{ name }}</li>{% endfor %}</ul>
+          {% else %}<p class="muted">– keine neuen Artikel –</p>{% endif %}
+
+          <p><strong>Übersprungen (schon auf der Liste)</strong> <span class="badge b-skip">{{ result.skipped|length }}</span></p>
+          {% if result.skipped %}
+            <ul>{% for name in result.skipped %}<li>{{ name }}</li>{% endfor %}</ul>
+          {% else %}<p class="muted">– keine Duplikate –</p>{% endif %}
+
+          <p class="muted">Checkboxen in Notion zurückgesetzt: {{ result.reset|length }}</p>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    <form class="card" method="post" action="/transfer">
+      <h2 style="margin-top:0;font-size:1.1rem;">Zugangsdaten</h2>
+
+      <label for="notion_token">Notion Integration-Token
+        <span class="hint">(beginnt mit <code>secret_</code> oder <code>ntn_</code>)</span>
+      </label>
+      <input type="password" id="notion_token" name="notion_token" value="{{ prefill.notion_token }}" placeholder="ntn_..." />
+
+      <label for="database_id">Notion Datenbank-ID
+        <span class="hint">(aus der URL der Datenbank)</span>
+      </label>
+      <input type="text" id="database_id" name="database_id" value="{{ prefill.database_id }}" placeholder="z.B. 1a2b3c4d..." />
+
+      <hr />
+
+      <label for="bring_email">Bring! E-Mail</label>
+      <input type="email" id="bring_email" name="bring_email" value="{{ prefill.bring_email }}" placeholder="name@example.com" />
+
+      <label for="bring_password">Bring! Passwort</label>
+      <input type="password" id="bring_password" name="bring_password" placeholder="••••••••" />
+
+      <label for="bring_list">Bring! Listenname
+        <span class="hint">(optional – leer = erste/Standardliste)</span>
+      </label>
+      <input type="text" id="bring_list" name="bring_list" value="{{ prefill.bring_list }}" placeholder="z.B. Einkauf" />
+
+      <details class="ssl" {% if prefill.ca_cert_path or prefill.disable_ssl %}open{% endif %}>
+        <summary>🔒 Netzwerk / SSL-Einstellungen (Firmennetzwerk)</summary>
+        <p class="hint" style="margin:0.5rem 0 1rem;">
+          Nur nötig, wenn du den Fehler
+          <code>CERTIFICATE_VERIFY_FAILED</code> erhältst (typisch im Firmennetz
+          mit HTTPS-Proxy).
+        </p>
+
+        <label for="ca_cert_path">Pfad zum Firmen-Zertifikat
+          <span class="hint">(empfohlen – .pem/.crt-Datei)</span>
+        </label>
+        <input type="text" id="ca_cert_path" name="ca_cert_path" value="{{ prefill.ca_cert_path }}" placeholder="z.B. C:\Zertifikate\firma-root.pem" />
+
+        <label class="checkbox-row">
+          <input type="checkbox" name="disable_ssl" {% if prefill.disable_ssl %}checked{% endif %} />
+          SSL-Prüfung deaktivieren <span class="hint">(unsicher – nur im vertrauenswürdigen Firmennetz)</span>
+        </label>
+      </details>
+
+      <button type="submit">An Bring! übertragen</button>
+    </form>
+
+    <p class="muted" style="text-align:center;">
+      Deine Zugangsdaten werden nur für diese eine Übertragung verwendet und nicht gespeichert.
+    </p>
+  </div>
+</body>
+</html>
