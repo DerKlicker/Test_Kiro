@@ -23,6 +23,17 @@ class BringResult:
     list_name: str
 
 
+def _attr(obj, name: str, default=None):
+    """Liest ein Feld sowohl aus Dataclass-Objekten (neue bring-api, Zugriff
+    per Attribut) als auch aus Dictionaries (ältere API, Zugriff per Key).
+
+    Die aktuelle bring-api liefert typisierte Objekte wie BringListResponse
+    oder BringList zurück, die NICHT per [] ansprechbar sind."""
+    if isinstance(obj, dict):
+        return obj.get(name, default)
+    return getattr(obj, name, default)
+
+
 def _make_session(ca_cert_path: str | None, verify_ssl: bool) -> aiohttp.ClientSession:
     """Erzeugt eine aiohttp-Session mit passendem SSL-Context."""
     ssl_context = build_ssl_context(ca_cert_path=ca_cert_path, verify=verify_ssl)
@@ -44,7 +55,7 @@ async def _send_items_async(
         bring = Bring(session, email, password)
         await bring.login()
 
-        lists = (await bring.load_lists())["lists"]
+        lists = _attr(await bring.load_lists(), "lists", [])
         if not lists:
             raise RuntimeError("Keine Bring!-Einkaufsliste im Konto gefunden.")
 
@@ -52,23 +63,21 @@ async def _send_items_async(
         target = lists[0]
         if list_name:
             for lst in lists:
-                if lst.get("name", "").strip().lower() == list_name.strip().lower():
+                if _attr(lst, "name", "").strip().lower() == list_name.strip().lower():
                     target = lst
                     break
 
-        list_uuid = target["listUuid"]
+        list_uuid = _attr(target, "listUuid")
 
         # Bereits vorhandene Artikel lesen, um Duplikate zu vermeiden.
         existing_raw = await bring.get_list(list_uuid)
-        existing_items = existing_raw.get("items", {})
-        # Je nach API-Version liegen die Einträge unter "purchase".
-        purchase = (
-            existing_items.get("purchase", [])
-            if isinstance(existing_items, dict)
-            else existing_items
-        )
+        # get_list liefert ein Objekt/Dict mit .items -> .purchase (Liste).
+        items_container = _attr(existing_raw, "items", [])
+        purchase = _attr(items_container, "purchase", items_container)
+        if purchase is None:
+            purchase = []
         existing_names = {
-            (it.get("itemId") or it.get("name") or "").strip().lower()
+            (_attr(it, "itemId") or _attr(it, "name") or "").strip().lower()
             for it in purchase
         }
 
@@ -83,7 +92,9 @@ async def _send_items_async(
             added.append(name)
             existing_names.add(name.strip().lower())
 
-        return BringResult(added=added, skipped=skipped, list_name=target.get("name", ""))
+        return BringResult(
+            added=added, skipped=skipped, list_name=_attr(target, "name", "")
+        )
 
 
 def send_items(
@@ -111,8 +122,8 @@ async def _list_names_async(
     async with _make_session(ca_cert_path, verify_ssl) as session:
         bring = Bring(session, email, password)
         await bring.login()
-        lists = (await bring.load_lists())["lists"]
-        return [lst.get("name", "") for lst in lists]
+        lists = _attr(await bring.load_lists(), "lists", [])
+        return [_attr(lst, "name", "") for lst in lists]
 
 
 def list_names(
