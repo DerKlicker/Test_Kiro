@@ -1,7 +1,19 @@
+# Webserver / App
 flask==3.0.3
-notion-client==2.2.1
-bring-api==1.1.0
-aiohttp==3.10.11
-httpx==0.27.2
-certifi>=2024.0.0
 gunicorn==23.0.0
+
+# Notion
+notion-client==2.2.1
+httpx==0.27.2
+
+# Bring! (inoffiziell) + dessen Laufzeit-Abhängigkeiten.
+# bring-api >=1.1 benötigt aiohttp>=3.13, mashumaro und orjson.
+# Diese werden hier explizit aufgeführt, damit sie im Container-Image
+# garantiert vorhanden sind (sonst: ModuleNotFoundError: 'mashumaro').
+bring-api==1.1.0
+aiohttp>=3.13.0
+mashumaro>=3.13
+orjson>=3.10
+
+# SSL-Zertifikate
+certifi>=2024.0.0
