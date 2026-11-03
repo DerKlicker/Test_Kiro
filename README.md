@@ -112,6 +112,22 @@ Stelle sicher, dass die Zertifikatsbasis aktuell ist:
 pip install --upgrade certifi
 ```
 
+## Betrieb als Docker-Container / auf TrueNAS SCALE
+
+Die Anwendung lässt sich als Docker-Container betreiben – z.B. dauerhaft auf
+einem **TrueNAS SCALE**-Server, erreichbar über den Browser im lokalen Netz.
+
+Schneller Test (lokal, mit Docker):
+
+```bash
+docker compose up -d --build
+# dann im Browser: http://<host-ip>:8247
+```
+
+Die vollständige Schritt-für-Schritt-Anleitung für TrueNAS SCALE (Custom App,
+lokal bauen **oder** Image aus der GitHub Container Registry) findest du in
+**[`TRUENAS.md`](TRUENAS.md)**.
+
 ## Wichtige Hinweise
 
 - Die **Bring!-API ist inoffiziell** (`bring-api`). Sie wird von der App selbst
@@ -131,6 +147,12 @@ pip install --upgrade certifi
 ├── ssl_helper.py       # SSL-Konfiguration (Firmennetz / Zertifikate)
 ├── templates/
 │   └── index.html      # Oberfläche
+├── Dockerfile          # Container-Image (Gunicorn)
+├── docker-compose.yml  # Start per Compose / TrueNAS Custom App
+├── .dockerignore
+├── .github/workflows/
+│   └── docker-publish.yml  # Auto-Build -> GitHub Container Registry
+├── TRUENAS.md          # Deployment-Anleitung für TrueNAS SCALE
 ├── requirements.txt
 ├── .env.example
 └── README.md

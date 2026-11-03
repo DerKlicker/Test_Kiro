@@ -1,0 +1,56 @@
+# Docker Compose für die Notion-zu-Bring!-Anwendung.
+#
+# Zwei Nutzungsarten:
+#   A) LOKAL BAUEN  -> die "build:"-Zeile verwenden (Standard unten aktiv).
+#   B) REGISTRY     -> stattdessen die "image:"-Zeile mit ghcr.io aktivieren
+#                      (siehe TRUENAS.md, Weg B).
+#
+# Start (per SSH):   docker compose up -d
+# In TrueNAS SCALE:  Apps -> Discover Apps -> Custom App -> "Install via YAML"
+#                    und diesen Inhalt einfügen.
+
+services:
+  notion-to-bring:
+    container_name: notion-to-bring
+
+    # --- Weg A: Image lokal aus diesem Verzeichnis bauen ---
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    # --- Weg B: fertiges Image aus der Registry ziehen ---
+    # Dafür die beiden "build:"-Zeilen oben auskommentieren und die
+    # nächste Zeile aktivieren (GHCR_USER durch deinen GitHub-Namen ersetzen):
+    # image: ghcr.io/GHCR_USER/notion-to-bring:latest
+
+    image: notion-to-bring:latest
+
+    restart: unless-stopped
+
+    ports:
+      # Host-Port 8247 -> Container-Port 5000
+      - "8247:5000"
+
+    environment:
+      # Innerhalb des Containers an alle Interfaces binden.
+      - HOST=0.0.0.0
+      - PORT=5000
+      # Optionale Vorbelegung der Felder (Passwort NIE hier eintragen!):
+      # - NOTION_TOKEN=
+      # - NOTION_DATABASE_ID=
+      # - BRING_EMAIL=
+      # - BRING_LIST=
+      # - CA_CERT_PATH=/certs/firma-root.pem
+      # - DISABLE_SSL_VERIFY=false
+
+    # Optional: Ordner mit dem Firmen-Zertifikat in den Container einhängen.
+    # Dann im Feld "Pfad zum Firmen-Zertifikat" z.B. /certs/firma-root.pem angeben.
+    # volumes:
+    #   - /mnt/pool/apps/notion-to-bring/certs:/certs:ro
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://127.0.0.1:5000/',timeout=5).status==200 else sys.exit(1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s

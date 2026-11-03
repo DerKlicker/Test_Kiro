@@ -1,0 +1,23 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Lokale Umgebung / Secrets
+.env
+
+# Dokumentation / CI (nicht ins Image nötig)
+README.md
+docs/
+.github/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
