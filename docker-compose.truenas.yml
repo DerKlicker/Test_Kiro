@@ -1,0 +1,46 @@
+# Docker Compose speziell für TrueNAS SCALE "Custom App" (Install via YAML).
+#
+# WICHTIG: TrueNAS kann KEINE Images aus einem lokalen Ordner bauen
+# (kein "build:" möglich). Diese Datei nutzt daher ausschließlich das
+# fertige Image aus der GitHub Container Registry (ghcr.io), das von der
+# GitHub-Actions-Pipeline automatisch erzeugt wird.
+#
+# Verwendung in TrueNAS SCALE:
+#   Apps -> Discover Apps -> Custom App -> "Install via YAML"
+#   -> den gesamten Inhalt dieser Datei einfügen.
+#
+# Voraussetzung: Das ghcr.io-Package muss abrufbar sein. Am einfachsten,
+# indem du es auf "public" stellst (siehe TRUENAS.md). Ist es privat, musst
+# du dich auf dem TrueNAS einmal per "docker login ghcr.io" anmelden.
+
+services:
+  notion-to-bring:
+    image: ghcr.io/derklicker/test_kiro:latest
+    container_name: notion-to-bring
+    restart: unless-stopped
+
+    ports:
+      # Host-Port 8247 -> Container-Port 5000
+      - "8247:5000"
+
+    environment:
+      - HOST=0.0.0.0
+      - PORT=5000
+      # Optionale Vorbelegung (Passwort NIE hier eintragen!):
+      # - NOTION_TOKEN=
+      # - NOTION_DATABASE_ID=
+      # - BRING_EMAIL=
+      # - BRING_LIST=
+      # - CA_CERT_PATH=/certs/firma-root.pem
+      # - DISABLE_SSL_VERIFY=false
+
+    # Optional: Firmen-Zertifikat in den Container einhängen.
+    # volumes:
+    #   - /mnt/pool/apps/notion-to-bring/certs:/certs:ro
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://127.0.0.1:5000/',timeout=5).status==200 else sys.exit(1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
