@@ -54,20 +54,57 @@ Falls deine SCALE-Version kein YAML-Feld bietet, die Felder manuell setzen:
 - **Environment:** `HOST=0.0.0.0`, `PORT=5000`
 - **Restart Policy:** `unless-stopped`
 
-### 3. Updates einspielen
+### 3. Updates einspielen (manuell)
 
 Nach Änderungen baut GitHub automatisch ein neues `latest`-Image. In TrueNAS
-die App öffnen und auf **Update** klicken (bzw. App neu „pullen“).
+die App öffnen und auf **Update** klicken.
+
+> ⚠️ **„latest“-Cache-Falle:** Da sich der Tag-Name `latest` nie ändert, zieht
+> TrueNAS manchmal weiter das alte, gecachte Image. Hilft „Update“ nicht,
+> erzwinge den Pull per SSH:
+> ```bash
+> sudo docker pull ghcr.io/derklicker/test_kiro:latest
+> ```
+> und starte die App danach neu. Alternativ kannst du gezielt einen
+> eindeutigen Tag verwenden, z.B. `...:sha-<commit>` oder einen Versions-Tag.
+
+---
+
+## ⭐ Automatische Updates mit Watchtower
+
+Damit du nicht jedes Mal manuell aktualisieren musst, kann **Watchtower** das
+übernehmen: ein kleiner Zusatz-Container, der regelmäßig prüft, ob ein neueres
+Image vorliegt, und die App dann automatisch aktualisiert und neu startet.
+
+**Das löst auch die „latest“-Cache-Falle:** Watchtower vergleicht den
+Image-*Digest* (den tatsächlichen Inhalt), nicht nur den Tag-Namen. Ein neues
+`latest` wird dadurch zuverlässig erkannt.
+
+### Einrichtung
+
+Lege **eine** Custom App mit beiden Diensten an (App + Watchtower). Nimm dafür
+den Inhalt von **`docker-compose.truenas-autoupdate.yml`** bei
+**„Install via YAML“**.
+
+Kernpunkte dieser Konfiguration:
+- Die App bekommt das Label `com.centurylinklabs.watchtower.enable=true`.
+- Watchtower läuft mit `--label-enable`, aktualisiert also **nur** diese App
+  (nicht andere Container auf dem System).
+- Prüfintervall: alle 6 Stunden (`WATCHTOWER_POLL_INTERVAL=21600`), anpassbar.
+- `--cleanup` entfernt alte Images, damit die Platte nicht vollläuft.
+
+> **Hinweis zum Docker-Socket:** Watchtower braucht Zugriff auf
+> `/var/run/docker.sock`, um Container zu steuern. Das ist für dieses Tool
+> normal und nötig. Wer das vermeiden will, nutzt stattdessen das manuelle
+> Update oben.
+
+Ab jetzt gilt: Sobald du Code änderst → GitHub baut ein neues `latest` →
+Watchtower zieht es beim nächsten Check automatisch. Kein Handanlegen mehr. 🎉
 
 ---
 
 ## Alternative: per SSH auf der Kommandozeile
 
-## Weg A – Image lokal auf dem TrueNAS bauen
-
-### 1. Code auf den Server bringen
-
-Per SSH auf den TrueNAS einloggen und das Repository klonen (oder die Dateien
 Dieser Weg ist nur für den schnellen Test gedacht. TrueNAS verwaltet Docker
 normalerweise selbst – manuelle CLI-Container tauchen nicht in der App-Oberfläche
 auf und können bei TrueNAS-Updates verloren gehen.

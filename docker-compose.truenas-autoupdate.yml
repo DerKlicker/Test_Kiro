@@ -1,0 +1,47 @@
+# TrueNAS SCALE "Custom App" (Install via YAML) MIT automatischen Updates.
+#
+# Enthält zwei Dienste:
+#   1. notion-to-bring  -> die eigentliche Anwendung
+#   2. watchtower       -> prüft regelmäßig auf ein neueres Image und
+#                          aktualisiert den App-Container automatisch
+#
+# So löst sich auch das "latest"-Cache-Problem: Watchtower vergleicht den
+# Image-DIGEST (den echten Inhalt), nicht nur den Tag-Namen. Dadurch wird ein
+# neues :latest zuverlässig erkannt und gezogen.
+#
+# Verwendung:
+#   Apps -> Discover Apps -> Custom App -> "Install via YAML"
+#   -> den gesamten Inhalt dieser Datei einfügen.
+
+services:
+  notion-to-bring:
+    image: ghcr.io/derklicker/test_kiro:latest
+    container_name: notion-to-bring
+    restart: unless-stopped
+    ports:
+      - "8247:5000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=5000
+    labels:
+      # Nur Container mit diesem Label werden von Watchtower aktualisiert.
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: notion-to-bring-watchtower
+    restart: unless-stopped
+    volumes:
+      # Watchtower braucht Zugriff auf den Docker-Socket, um Container zu
+      # aktualisieren. (Read-only reicht fürs Prüfen + Neustarten.)
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      # Alle 6 Stunden prüfen (21600 Sekunden). Anpassbar nach Bedarf.
+      - WATCHTOWER_POLL_INTERVAL=21600
+      # Nur Container mit dem Label oben beobachten (nicht das ganze System).
+      - WATCHTOWER_LABEL_ENABLE=true
+      # Alte, ersetzte Images aufräumen, damit die Platte nicht vollläuft.
+      - WATCHTOWER_CLEANUP=true
+      # Watchtower soll sich nicht selbst neu starten wollen.
+      - WATCHTOWER_INCLUDE_RESTARTING=false
+    command: ["--label-enable", "--cleanup"]
