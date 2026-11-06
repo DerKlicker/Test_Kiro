@@ -44,6 +44,15 @@
     details.ssl summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; }
     .checkbox-row { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem; }
     .checkbox-row input { width: auto; margin: 0; }
+    a.bigbtn {
+      display: block; text-align: center; text-decoration: none;
+      background: var(--accent); color: #fff; border-radius: 8px;
+      padding: 0.9rem 1.25rem; font-size: 1.05rem; font-weight: 700;
+    }
+    a.bigbtn:hover { background: #276a43; }
+    .ok-note { background: #def7ec; border: 1px solid #a7e8cf; color: #03543f;
+               padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem; }
+    details.form summary { cursor: pointer; font-weight: 600; font-size: 0.95rem; color: #52606d; }
   </style>
 </head>
 <body>
@@ -79,8 +88,25 @@
       </div>
     {% endif %}
 
-    <form class="card" method="post" action="/transfer">
-      <h2 style="margin-top:0;font-size:1.1rem;">Zugangsdaten</h2>
+    {# Großer Ein-Klick-Button: nutzt die zentral hinterlegten Zugangsdaten. #}
+    <div class="card">
+      {% if auto_ran %}
+        <div class="ok-note">Diese Übertragung lief automatisch mit den zentral hinterlegten Zugangsdaten.</div>
+      {% endif %}
+      <a class="bigbtn" href="/run">🔄 Jetzt übertragen</a>
+      <p class="muted" style="text-align:center;margin:0.75rem 0 0;">
+        Startet die Übertragung mit den hinterlegten Zugangsdaten.
+      </p>
+    </div>
+
+    <details class="card form">
+      <summary>⚙️ Zugangsdaten eintragen / überschreiben</summary>
+      <p class="hint" style="margin:0.75rem 0 1rem;">
+        Normalerweise werden die Zugangsdaten zentral als Umgebungsvariablen
+        hinterlegt. Hier kannst du sie bei Bedarf manuell eingeben oder einmalig
+        überschreiben.
+      </p>
+    <form method="post" action="/transfer">
 
       <label for="notion_token">Notion Integration-Token
         <span class="hint">(beginnt mit <code>secret_</code> oder <code>ntn_</code>)</span>
@@ -97,8 +123,10 @@
       <label for="bring_email">Bring! E-Mail</label>
       <input type="email" id="bring_email" name="bring_email" value="{{ prefill.bring_email }}" placeholder="name@example.com" />
 
-      <label for="bring_password">Bring! Passwort</label>
-      <input type="password" id="bring_password" name="bring_password" placeholder="••••••••" />
+      <label for="bring_password">Bring! Passwort
+        {% if prefill.has_env_password %}<span class="hint">(zentral hinterlegt – leer lassen, um es zu verwenden)</span>{% endif %}
+      </label>
+      <input type="password" id="bring_password" name="bring_password" placeholder="{% if prefill.has_env_password %}•••••••• (hinterlegt){% else %}••••••••{% endif %}" />
 
       <label for="bring_list">Bring! Listenname
         <span class="hint">(optional – leer = erste/Standardliste)</span>
@@ -126,9 +154,11 @@
 
       <button type="submit">An Bring! übertragen</button>
     </form>
+    </details>
 
     <p class="muted" style="text-align:center;">
-      Deine Zugangsdaten werden nur für diese eine Übertragung verwendet und nicht gespeichert.
+      Manuell eingegebene Zugangsdaten werden nur für die jeweilige Übertragung
+      verwendet und nicht dauerhaft gespeichert.
     </p>
   </div>
 </body>

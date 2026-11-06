@@ -112,6 +112,39 @@ Stelle sicher, dass die Zertifikatsbasis aktuell ist:
 pip install --upgrade certifi
 ```
 
+## Ein-Klick-Betrieb & Notion-Button
+
+Für den bequemen Dauerbetrieb lassen sich die Zugangsdaten **zentral** als
+Umgebungsvariablen hinterlegen (`NOTION_TOKEN`, `NOTION_DATABASE_ID`,
+`BRING_EMAIL`, `BRING_PASSWORD`, optional `BRING_LIST`). Dann gilt:
+
+- **Aufruf der Startseite** (`http://<host>:8247/`) überträgt **automatisch**
+  und zeigt das Ergebnis. (Mit `?noauto=1` nur die Seite ohne Auto-Lauf.)
+- **`/run`** startet die Übertragung ebenfalls sofort – ideal zum Verlinken.
+- Die Weboberfläche bietet zusätzlich einen großen **„Jetzt übertragen"**-Button
+  und ein ausklappbares Formular zum Überschreiben der Daten (Backup).
+
+### Button direkt in Notion
+
+Notion-Buttons können keine Server direkt ansprechen, aber eine URL öffnen:
+
+1. In Notion einen **Button** einfügen (`/button`).
+2. Als Aktion **„Open link"** / **„Link öffnen"** wählen.
+3. Als URL eintragen: `http://<TrueNAS-IP>:8247/run`
+4. Beschriften, z.B. „🛒 An Bring! senden".
+
+Ein Klick öffnet dann einen Tab, der die Übertragung ausführt und das Ergebnis
+anzeigt.
+
+> **Hinweis:** Die App ist nur im **lokalen Netzwerk** erreichbar. Der
+> Notion-Button funktioniert daher nur, wenn dein Gerät im selben Netz ist.
+> Für Fernzugriff bräuchte es zusätzlich z.B. ein VPN (Tailscale) oder einen
+> Reverse Proxy.
+
+> **Sicherheit:** Bei zentral hinterlegten Zugangsdaten liegt das Bring!-Passwort
+> als Klartext in der Container-Konfiguration. Für den privaten Heimbetrieb ist
+> das üblich; nutze idealerweise einen separaten (Test-)Account.
+
 ## Betrieb als Docker-Container / auf TrueNAS SCALE
 
 Die Anwendung lässt sich als Docker-Container betreiben – z.B. dauerhaft auf
