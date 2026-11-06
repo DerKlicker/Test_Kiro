@@ -23,6 +23,19 @@ services:
     environment:
       - HOST=0.0.0.0
       - PORT=5000
+      # --- Zentral hinterlegte Zugangsdaten ---
+      # Sind diese gesetzt, überträgt die Seite beim Aufruf automatisch und der
+      # Notion-Button (/run) funktioniert ohne weitere Eingabe.
+      # Trage hier deine echten Werte ein:
+      - NOTION_TOKEN=ntn_dein_token_hier
+      - NOTION_DATABASE_ID=deine_datenbank_id_hier
+      - BRING_EMAIL=dein-test-account@example.com
+      - BRING_PASSWORD=dein_bring_passwort
+      # Optional: bestimmte Liste wählen (leer = erste/Standardliste)
+      - BRING_LIST=
+      # Optional (nur im Firmennetz): Zertifikat oder SSL-Prüfung deaktivieren
+      # - CA_CERT_PATH=/certs/firma-root.pem
+      # - DISABLE_SSL_VERIFY=false
     labels:
       # Nur Container mit diesem Label werden von Watchtower aktualisiert.
       - "com.centurylinklabs.watchtower.enable=true"
